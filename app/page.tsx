@@ -144,7 +144,14 @@ export default function Home() {
     try {
       const form = new FormData(); form.append('message', question); form.append('language', language);
       const res = await fetch('/api/chat', { method: 'POST', body: form });
-      const data = await res.json();
+      const text = await res.text();
+let data;
+
+try {
+  data = JSON.parse(text);
+} catch {
+  throw new Error('De server stuurde geen geldig antwoord. Controleer de API-configuratie in Cloudflare.');
+}
       if (!res.ok) throw new Error(data.error || 'De AI kon niet antwoorden.');
       setChat(prev => [...prev, { role: 'assistant', content: data.answer }]);
     } catch (err) { setChat(prev => [...prev, { role: 'assistant', content: err instanceof Error ? err.message : 'Er ging iets mis.' }]); }
