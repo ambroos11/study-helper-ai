@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Learnova — Study smarter. Achieve more.',
+  title: 'Study Helper AI — Study smarter. Achieve more.',
   description: 'Your personal AI-powered study space with an AI tutor, flashcards and practice mode.',
 };
 
