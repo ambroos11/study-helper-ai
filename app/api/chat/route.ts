@@ -13,11 +13,11 @@ const languageNames: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.AI_GATEWAY_API_KEY;
+    const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'AI_GATEWAY_API_KEY ontbreekt in Cloudflare.' },
+        { error: 'sk-dbc319ed0f8445cda4dbc72735b5f0fa' },
         { status: 503 }
       );
     }
@@ -44,8 +44,6 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-
       if (
         file.type === 'application/pdf' ||
         file.name.toLowerCase().endsWith('.pdf')
@@ -58,10 +56,10 @@ export async function POST(request: NextRequest) {
         /\.(txt|md)$/i.test(file.name) ||
         file.type.startsWith('text/')
       ) {
-        documentText = buffer.toString('utf8');
+        documentText = await file.text();
       } else {
         return NextResponse.json(
-          { error: 'Upload voorlopig een PDF-, TXT- of MD-bestand.' },
+          { error: 'Upload voorlopig een TXT- of MD-bestand.' },
           { status: 415 }
         );
       }
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
       documentText = documentText.slice(0, 24000);
     }
 
-    const system = `You are Study Helper AI, a friendly and reliable tutor for secondary-school students. Explain concepts clearly at the student's level, use examples, and encourage learning. Base answers on provided study material when available. Do not invent facts. Reply in ${languageNames[language] || 'Dutch'}. Use clear headings and readable formatting.`;
+    const system = `You are Study Helper AI, a friendly and reliable tutor for secondary-school students. Explain concepts clearly at the student's level, use examples and encourage learning. Base answers on provided study material when available. Do not invent facts. Reply in ${languageNames[language] || 'Dutch'}. Use clear headings and readable formatting.`;
 
     const userContent = [
       message || 'Help me study this document.',
@@ -77,7 +75,7 @@ export async function POST(request: NextRequest) {
     ].join('');
 
     const response = await fetch(
-      'https://ai-gateway.vercel.sh/v1/chat/completions',
+      'https://api.deepseek.com/chat/completions',
       {
         method: 'POST',
         headers: {
@@ -85,11 +83,12 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'deepseek/deepseek-v4.1-flash',
+          model: 'deepseek-flash',
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: userContent }
           ],
+          thinking: { type: 'disabled' },
           temperature: 0.7,
           max_tokens: 1500
         })
@@ -99,10 +98,17 @@ export async function POST(request: NextRequest) {
     const result: any = await response.json();
 
     if (!response.ok) {
-      console.error('VERCEL_GATEWAY_ERROR', response.status, result);
+      console.error(
+        'DEEPSEEK_API_ERROR',
+        response.status,
+        result
+      );
 
       return NextResponse.json(
-        { error: 'Gateway error', details: result },
+        {
+          error: 'DeepSeek API error',
+          details: result?.error?.message || 'Onbekende API-fout'
+        },
         { status: 502 }
       );
     }
@@ -114,17 +120,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('AI_GATEWAY_FAILURE', {
-      message: error?.message,
-      status: error?.status,
-      code: error?.code,
-      type: error?.type
-    });
+    console.error('DEEPSEEK_CONNECTION_ERROR', error?.message);
 
     return NextResponse.json(
       {
-        error: 'AI Gateway error',
-        details: error?.message || 'Unknown error'
+        error: 'Verbindingsfout met DeepSeek.',
+        details: error?.message || 'Onbekende fout'
       },
       { status: 500 }
     );
