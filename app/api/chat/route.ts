@@ -1,6 +1,5 @@
 
 import OpenAI from 'openai';
-
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -19,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'DeepSeek API key is not configured.' },
+        { error: 'AI Gateway API key is not configured.' },
         { status: 503 }
       );
     }
@@ -48,12 +47,20 @@ export async function POST(request: NextRequest) {
 
       const buffer = Buffer.from(await file.arrayBuffer());
 
-      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-  return NextResponse.json(
-    { error: 'PDF-ondersteuning wordt tijdelijk bijgewerkt. Gebruik voorlopig TXT of MD.' },
-    { status: 415 }
-  );
-}} else if (/\.(txt|md)$/i.test(file.name) || file.type.startsWith('text/')) {
+      if (
+        file.type === 'application/pdf' ||
+        file.name.toLowerCase().endsWith('.pdf')
+      ) {
+        return NextResponse.json(
+          {
+            error: 'PDF-ondersteuning wordt bijgewerkt. Gebruik voorlopig TXT of MD.'
+          },
+          { status: 415 }
+        );
+      } else if (
+        /\.(txt|md)$/i.test(file.name) ||
+        file.type.startsWith('text/')
+      ) {
         documentText = buffer.toString('utf8');
       } else {
         return NextResponse.json(
@@ -94,10 +101,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('DeepSeek API error:', error);
+    console.error('AI Gateway error:', error);
 
     return NextResponse.json(
-      { error: 'DeepSeek kon je vraag niet verwerken. Controleer de API-configuratie.' },
+      { error: 'De AI kon je vraag niet verwerken. Controleer de Gateway-configuratie.' },
       { status: 500 }
     );
   }
