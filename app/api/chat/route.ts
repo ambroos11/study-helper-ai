@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'sk-dbc319ed0f8445cda4dbc72735b5f0fa' },
+        { error: 'DeepSeek API-key ontbreekt in Cloudflare.' },
         { status: 503 }
       );
     }
@@ -83,12 +83,11 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'deepseek-flash',
+          model: 'deepseek-chat',
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: userContent }
           ],
-          thinking: { type: 'disabled' },
           temperature: 0.7,
           max_tokens: 1500
         })
@@ -98,16 +97,15 @@ export async function POST(request: NextRequest) {
     const result: any = await response.json();
 
     if (!response.ok) {
-      console.error(
-        'DEEPSEEK_API_ERROR',
-        response.status,
-        result
-      );
+      console.error('DEEPSEEK_API_ERROR', response.status, {
+        message: result?.error?.message,
+        type: result?.error?.type
+      });
 
       return NextResponse.json(
         {
-          error: 'DeepSeek API error',
-          details: result?.error?.message || 'Onbekende API-fout'
+          error: 'DeepSeek kon je vraag niet verwerken.',
+          details: result?.error?.message || 'Onbekende API-fout.'
         },
         { status: 502 }
       );
@@ -124,8 +122,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: 'Verbindingsfout met DeepSeek.',
-        details: error?.message || 'Onbekende fout'
+        error: 'Verbindingsfout met DeepSeek. Probeer opnieuw.'
       },
       { status: 500 }
     );
