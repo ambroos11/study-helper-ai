@@ -72,10 +72,41 @@ export async function POST(request: NextRequest) {
       documentText = documentText.slice(0, 24000);
     }
 
-    const client = new OpenAI({
-      apiKey,
-      baseURL: 'https://ai-gateway.vercel.sh/v1'
-    });
+    const response = await fetch(
+  'https://ai-gateway.vercel.sh/v1/chat/completions',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'deepseek/deepseek-v4.1-flash',
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userContent }
+      ],
+      temperature: 0.7,
+      max_tokens: 1500
+    })
+  }
+);
+
+const result = await response.json();
+
+if (!response.ok) {
+  console.error('VERCEL_GATEWAY_ERROR', response.status, result);
+  return NextResponse.json(
+    { error: 'Gateway error', details: result },
+    { status: response.status }
+  );
+}
+
+const answer = result.choices?.[0]?.message?.content;
+
+return NextResponse.json({
+  answer: answer || 'Geen antwoord ontvangen.'
+});
 
     const system = `You are Study Helper AI, a friendly and reliable tutor for secondary-school students. Explain concepts clearly at the student's level, use examples, and encourage learning. If study material is provided, base your answer on it and say when information is missing. Do not invent facts. Reply in ${languageNames[language] || 'Dutch'}. Use clear headings and readable formatting.`;
 
@@ -84,7 +115,7 @@ export async function POST(request: NextRequest) {
       documentText ? `\n\nSTUDY MATERIAL:\n${documentText}` : ''
     ].join('');
 
-    const completion = await client.chat.completions.create({
+    
       model: 'deepseek/deepseek-v4.1-flash',
       messages: [
         { role: 'system', content: system },
