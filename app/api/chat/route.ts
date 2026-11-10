@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const client = new OpenAI({
       apiKey,
-      baseURL: 'https://api.deepseek.com'
+      baseURL: 'https://ai-gateway.vercel.sh/v1'
     });
 
     const system = `You are Study Helper AI, a friendly and reliable tutor for secondary-school students. Explain concepts clearly at the student's level, use examples, and encourage learning. If study material is provided, base your answer on it and say when information is missing. Do not invent facts. Reply in ${languageNames[language] || 'Dutch'}. Use clear headings and readable formatting.`;
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     ].join('');
 
     const completion = await client.chat.completions.create({
-      model: 'deepseek-chat',
+      model: 'deepseek/deepseek-v4.1-flash',
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: userContent }
