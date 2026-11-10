@@ -1,5 +1,4 @@
 
-import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'AI Gateway API key is not configured.' },
+        { error: 'AI_GATEWAY_API_KEY ontbreekt in Cloudflare.' },
         { status: 503 }
       );
     }
@@ -52,9 +51,7 @@ export async function POST(request: NextRequest) {
         file.name.toLowerCase().endsWith('.pdf')
       ) {
         return NextResponse.json(
-          {
-            error: 'PDF-ondersteuning wordt bijgewerkt. Gebruik voorlopig TXT of MD.'
-          },
+          { error: 'PDF-ondersteuning wordt bijgewerkt. Gebruik voorlopig TXT of MD.' },
           { status: 415 }
         );
       } else if (
@@ -72,76 +69,64 @@ export async function POST(request: NextRequest) {
       documentText = documentText.slice(0, 24000);
     }
 
-    const response = await fetch(
-  'https://ai-gateway.vercel.sh/v1/chat/completions',
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'deepseek/deepseek-v4.1-flash',
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userContent }
-      ],
-      temperature: 0.7,
-      max_tokens: 1500
-    })
-  }
-);
-
-const result = await response.json();
-
-if (!response.ok) {
-  console.error('VERCEL_GATEWAY_ERROR', response.status, result);
-  return NextResponse.json(
-    { error: 'Gateway error', details: result },
-    { status: response.status }
-  );
-}
-
-const answer = result.choices?.[0]?.message?.content;
-
-return NextResponse.json({
-  answer: answer || 'Geen antwoord ontvangen.'
-});
-
-    const system = `You are Study Helper AI, a friendly and reliable tutor for secondary-school students. Explain concepts clearly at the student's level, use examples, and encourage learning. If study material is provided, base your answer on it and say when information is missing. Do not invent facts. Reply in ${languageNames[language] || 'Dutch'}. Use clear headings and readable formatting.`;
+    const system = `You are Study Helper AI, a friendly and reliable tutor for secondary-school students. Explain concepts clearly at the student's level, use examples, and encourage learning. Base answers on provided study material when available. Do not invent facts. Reply in ${languageNames[language] || 'Dutch'}. Use clear headings and readable formatting.`;
 
     const userContent = [
       message || 'Help me study this document.',
       documentText ? `\n\nSTUDY MATERIAL:\n${documentText}` : ''
     ].join('');
 
-    
-      model: 'deepseek/deepseek-v4.1-flash',
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userContent }
-      ],
-      temperature: 0.7,
-      max_tokens: 1500
-    });
+    const response = await fetch(
+      'https://ai-gateway.vercel.sh/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'deepseek/deepseek-v4.1-flash',
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: userContent }
+          ],
+          temperature: 0.7,
+          max_tokens: 1500
+        })
+      }
+    );
 
-    const answer = completion.choices[0]?.message?.content;
+    const result: any = await response.json();
+
+    if (!response.ok) {
+      console.error('VERCEL_GATEWAY_ERROR', response.status, result);
+
+      return NextResponse.json(
+        { error: 'Gateway error', details: result },
+        { status: 502 }
+      );
+    }
+
+    const answer = result.choices?.[0]?.message?.content;
 
     return NextResponse.json({
-      answer: answer || 'Ik kon geen antwoord maken. Probeer opnieuw.'
+      answer: answer || 'Geen antwoord ontvangen.'
     });
 
   } catch (error: any) {
-  console.error('AI_GATEWAY_FAILURE', {
-    message: error?.message,
-    status: error?.status,
-    code: error?.code,
-    type: error?.type
-  });
+    console.error('AI_GATEWAY_FAILURE', {
+      message: error?.message,
+      status: error?.status,
+      code: error?.code,
+      type: error?.type
+    });
 
-  return NextResponse.json(
-    { error: 'AI Gateway error', details: error?.message || 'Unknown error' },
-    { status: 500 }
-  );
-}
+    return NextResponse.json(
+      {
+        error: 'AI Gateway error',
+        details: error?.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
 }
