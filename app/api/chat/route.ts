@@ -1,6 +1,6 @@
 
 import OpenAI from 'openai';
-import pdf from 'pdf-parse';
+
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -49,9 +49,11 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
 
       if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const parsed = await pdf(buffer);
-        documentText = parsed.text;
-      } else if (/\.(txt|md)$/i.test(file.name) || file.type.startsWith('text/')) {
+  return NextResponse.json(
+    { error: 'PDF-ondersteuning wordt tijdelijk bijgewerkt. Gebruik voorlopig TXT of MD.' },
+    { status: 415 }
+  );
+}} else if (/\.(txt|md)$/i.test(file.name) || file.type.startsWith('text/')) {
         documentText = buffer.toString('utf8');
       } else {
         return NextResponse.json(
