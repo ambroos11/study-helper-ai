@@ -100,12 +100,17 @@ export async function POST(request: NextRequest) {
       answer: answer || 'Ik kon geen antwoord maken. Probeer opnieuw.'
     });
 
-  } catch (error) {
-    console.error('AI Gateway error:', error);
+  } catch (error: any) {
+  console.error('AI_GATEWAY_FAILURE', {
+    message: error?.message,
+    status: error?.status,
+    code: error?.code,
+    type: error?.type
+  });
 
-    return NextResponse.json(
-      { error: 'De AI kon je vraag niet verwerken. Controleer de Gateway-configuratie.' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: 'AI Gateway error', details: error?.message || 'Unknown error' },
+    { status: 500 }
+  );
+}
 }
